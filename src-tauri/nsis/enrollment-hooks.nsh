@@ -3,9 +3,9 @@
 
 !include LogicLib.nsh
 !include nsDialogs.nsh
+!include FileFunc.nsh
 
 # Define our registry keys
-!define ENROLLMENT_REGISTRY_KEY "SOFTWARE\${PRODUCTNAME}"
 !define ENROLLMENT_SECRET_VALUE "EnrollmentSecret"
 !define API_ENDPOINT_VALUE "ApiEndpoint"
 
@@ -22,11 +22,11 @@ Var ApiEndpoint
 Function ProcessEnrollmentSecret
   # Get command line parameters
   ${GetParameters} $R0
-  ${GetOptions} $R0 "/ENROLLMENT_SECRET=" $EnrollmentSecret
+  ${GetOptions} $R0 "/SECRET=" $EnrollmentSecret
   
   # If no enrollment secret provided, show error and exit
   ${If} $EnrollmentSecret == ""
-    MessageBox MB_ICONSTOP|MB_OK "Error: Enrollment secret is required.$\n$\nUsage: installer.exe /ENROLLMENT_SECRET=your-enrollment-secret$\n$\nFor silent install: installer.exe /ENROLLMENT_SECRET=your-secret /S"
+    MessageBox MB_ICONSTOP|MB_OK "Error: Secret is required.$\n$\nUsage: installer.exe /SECRET=enrollment-secret$\n$\nFor silent install: installer.exe /SECRET=your-secret /S"
     Quit
   ${EndIf}
   
@@ -38,7 +38,7 @@ Function ProcessEnrollmentSecret
   ${EndIf}
   
   # Set your API endpoint (centralized)
-  StrCpy $ApiEndpoint "https://api.yourdomain.com"
+  StrCpy $ApiEndpoint "http://192.168.1.112:3000"
   
   # Show confirmation dialog (but not in silent mode and don't reveal full secret)
   ${IfNot} ${Silent}
@@ -49,9 +49,8 @@ Function ProcessEnrollmentSecret
   ${EndIf}
   
   # Write enrollment configuration to registry
-  WriteRegStr SHCTX "${ENROLLMENT_REGISTRY_KEY}" "${ENROLLMENT_SECRET_VALUE}" "$EnrollmentSecret"
-  WriteRegStr SHCTX "${ENROLLMENT_REGISTRY_KEY}" "${API_ENDPOINT_VALUE}" "$ApiEndpoint"
-  WriteRegStr SHCTX "${ENROLLMENT_REGISTRY_KEY}" "EnrollmentDate" "$R0"
+  WriteRegStr SHCTX "SOFTWARE\MSPByte\MSPAgent" "${ENROLLMENT_SECRET_VALUE}" "$EnrollmentSecret"
+  WriteRegStr SHCTX "SOFTWARE\MSPByte\MSPAgent" "${API_ENDPOINT_VALUE}" "$ApiEndpoint"
   
   # Log success (only visible in detailed installer log)
   DetailPrint "Enrollment configuration saved successfully"
@@ -60,5 +59,5 @@ FunctionEnd
 # This macro is called during uninstallation
 !macro NSIS_HOOK_PREUNINSTALL
   # Clean up our registry entries
-  DeleteRegKey SHCTX "${ENROLLMENT_REGISTRY_KEY}"
+  DeleteRegKey SHCTX "SOFTWARE\MSPByte\MSPAgent"
 !macroend
