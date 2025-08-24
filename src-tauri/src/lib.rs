@@ -12,11 +12,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
+        .invoke_handler(tauri::generate_handler![
+            read_registry_value,
+            write_registry_value
+        ])
         .setup(|app| {
-                if let Some(main_window) = app.get_webview_window("main") {
-                    let _ = main_window.hide();
-                }
-
             // Create menu items
             let request_support_i = MenuItem::with_id(app, "request_support", "Request Support", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
@@ -61,15 +61,53 @@ pub fn run() {
 
             Ok(())
         })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                // Prevent the app from quitting when this window is closed
+                api.prevent_close();
+                let _ = window.hide();
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
-#[tauri::command]
 fn create_support_window(app: &AppHandle) {
     WebviewWindowBuilder::new(app, "support", WebviewUrl::App("support.html".into()))
         .title("Support Request")
         .inner_size(800.0, 600.0)
         .build()
         .expect("Failed to create support window");
+}
+
+#[tauri::command]
+fn read_registry_value(path: &str, value: &str) -> Result<String, String> {
+    use winreg::enums::*;
+    use winreg::RegKey;
+
+    let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let subkey = hkcu.open_subkey(path).map_err(|e| e.to_string())?;
+    let result: String = subkey.get_value(value).map_err(|e| e.to_string())?;
+    Ok(result)
+}
+
+#[tauri::command]
+fn write_registry_value(path: &str, value: &str, data: &str) -> Result<(), String> {
+    use winreg::enums::*;
+    use winreg::RegKey;
+
+    // Open HKLM (or HKCU if you prefer per-user storage)
+    let hkcu = RegKey::predef(HKEY_LOCAL_MACHINE);
+
+    // Open or create the subkey with write access
+    let (subkey, _) = hkcu
+        .create_subkey(path)
+        .map_err(|e| e.to_string())?;
+
+    // Set the value
+    subkey
+        .set_value(value, &data)
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }
