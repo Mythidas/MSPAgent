@@ -18,11 +18,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { chooseFileDialog } from "@/lib/helpers/file";
-import { useState } from "react";
+import { chooseFileDialog, readFileBinary } from "@/lib/helpers/file";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { getAPIKey } from "@/lib/helpers/api";
+import { fetch } from "@tauri-apps/plugin-http";
 
 const formSchema = z.object({
   summary: z.string().min(1, "Summary is required"),
@@ -30,21 +32,18 @@ const formSchema = z.object({
   urgency: z.string().min(1, "Please select urgency level"),
   impact: z.string().min(1, "Please select impact level"),
   name: z.string().min(1, "Name is required"),
-  email: z
-    .string()
-    .min(1, "Email is required")
-    .email("Valid email is required"),
-  phone: z.string().min(1, "Phone # is required"),
+  email: z.email("Valid email is required").min(1, "Email is required"),
+  phone: z.string().min(10, "Phone # is required"),
   screenshot: z.string().optional(),
 });
 
-type FormData = z.infer<typeof formSchema>;
+type FormDataC = z.infer<typeof formSchema>;
 
-function App() {
+export default function Support() {
   const [file, setFile] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<FormData>({
+  const form = useForm<FormDataC>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       summary: "",
@@ -58,40 +57,71 @@ function App() {
     },
   });
 
+  useEffect(() => {
+    const loadAPIKey = async () => {
+      await getAPIKey();
+    };
+
+    loadAPIKey();
+  }, []);
+
   const handleFileSelect = async () => {
     const filePath = await chooseFileDialog();
-    console.log(filePath);
     setFile(filePath);
     form.setValue("screenshot", filePath || "");
   };
 
-  const onSubmit = async (data: FormData) => {
+  function uint8ToBase64(uint8Array: Uint8Array): string {
+    let binary = "";
+    const len = uint8Array.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
+    }
+    return btoa(binary);
+  }
+
+  const onSubmit = async (data: FormDataC) => {
     try {
       setIsSubmitting(true);
+      const apiKey = await getAPIKey();
+      if (!apiKey) {
+        throw "Failed to find API Key";
+      }
 
-      // Mock API call
-      console.log("Submitting support ticket with data:", data);
+      const screenshot = data.screenshot
+        ? await readFileBinary(data.screenshot)
+        : null;
 
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const imageBase64 = screenshot ? uint8ToBase64(screenshot) : null;
 
-      // Mock successful response
-      const mockResponse = {
-        success: true,
-        ticketId: `TICK-${Date.now()}`,
-        message: "Support ticket created successfully",
-        data: data,
-      };
-
-      console.log("API Response:", mockResponse);
-      alert(
-        `Support ticket created successfully! Ticket ID: ${mockResponse.ticketId}`
+      const res = await fetch(
+        "http://192.168.1.112:3000/api/agent/tickets/create",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            ...data,
+            screenshot: imageBase64,
+          }),
+        }
       );
+      if (!res.ok) {
+        const errText = await res.text();
+        throw `HTTP ${res.status}: ${errText}`;
+      }
+
+      const body = await res.json();
+      alert(`Support ticket created successfully! Ticket ID: ${body.ticketId}`);
 
       // Reset form
       form.reset();
       setFile(null);
-    } catch (error) {
+    } catch (error: any) {
+      Object.entries(error).forEach(([key, value]) => {
+        console.error(`${key}: ${value}`);
+      });
       console.error("Error submitting form:", error);
       alert("Error submitting form. Please try again.");
     } finally {
@@ -251,5 +281,3 @@ function App() {
     </main>
   );
 }
-
-export default App;

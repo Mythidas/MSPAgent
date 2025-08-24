@@ -20,6 +20,8 @@
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "~2",
     "@tauri-apps/plugin-fs": "~2",
+    "@tauri-apps/plugin-http": "~2",
+    "@tauri-apps/plugin-log": "^2.6.0",
     "@tauri-apps/plugin-opener": "^2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -29,6 +31,7 @@
     "react-hook-form": "^7.62.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.12",
+    "tauri-plugin-log-api": "https://github.com/tauri-apps/tauri-plugin-log#v1",
     "zod": "^4.0.17"
   },
   "devDependencies": {

@@ -26,3 +26,7 @@ tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 windows = { version = "0.58", features = ["Win32_System_Registry"] }
 winreg = "0.55.0"
+hostname = "0.3"
+tauri-plugin-log = "2.0.0"
+tauri-plugin-http = "2"
+log = "0.4.27"

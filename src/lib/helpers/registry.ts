@@ -1,10 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 
 export async function getRegistryKey(path: string, value: string) {
-  return await invoke<string>("read_registry_value", {
-    path,
-    value,
-  });
+  try {
+    return await invoke<string>("read_registry_value", {
+      path,
+      value,
+    });
+  } catch {
+    return null;
+  }
 }
 
 export async function setRegistryKey(
@@ -12,9 +16,16 @@ export async function setRegistryKey(
   value: string,
   data: string
 ) {
-  await invoke("write_registry_value", {
-    path,
-    value,
-    data,
-  });
+  try {
+    await invoke("write_registry_value", {
+      path,
+      value,
+      data,
+    });
+
+    return true;
+  } catch (e: any) {
+    console.log(e);
+    return false;
+  }
 }
