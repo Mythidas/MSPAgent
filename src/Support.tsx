@@ -18,7 +18,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { chooseFileDialog, readFileBinary } from "@/lib/helpers/file";
+import {
+  chooseFileDialog,
+  readFileBinary,
+  readFileText,
+} from "@/lib/helpers/file";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -48,8 +52,8 @@ export default function Support() {
     defaultValues: {
       summary: "",
       description: "",
-      urgency: "none",
-      impact: "single",
+      urgency: "3",
+      impact: "3",
       name: "",
       email: "",
       phone: "",
@@ -81,8 +85,9 @@ export default function Support() {
   }
 
   const onSubmit = async (data: FormDataC) => {
+    setIsSubmitting(true);
+
     try {
-      setIsSubmitting(true);
       const apiKey = await getAPIKey();
       if (!apiKey) {
         throw "Failed to find API Key";
@@ -94,6 +99,19 @@ export default function Support() {
 
       const imageBase64 = screenshot ? uint8ToBase64(screenshot) : null;
 
+      const settings = JSON.parse(
+        (await readFileText(
+          "C:\\ProgramData\\CentraStage\\AEMAgent\\Settings.json"
+        )) || ""
+      );
+
+      if (Number(data.impact) > 3) {
+        data.impact = "3";
+      }
+      if (Number(data.urgency) > 3) {
+        data.urgency = "3";
+      }
+
       const res = await fetch(
         "http://192.168.1.112:3000/api/agent/tickets/create",
         {
@@ -103,6 +121,8 @@ export default function Support() {
           },
           body: JSON.stringify({
             ...data,
+            deviceId: settings.deviceUID,
+            siteId: settings.siteUID,
             screenshot: imageBase64,
           }),
         }
@@ -180,9 +200,9 @@ export default function Support() {
                         <SelectValue placeholder="Select urgency" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">Not urgent</SelectItem>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
+                        <SelectItem value="3">Low</SelectItem>
+                        <SelectItem value="2">Medium</SelectItem>
+                        <SelectItem value="1">High</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -203,10 +223,9 @@ export default function Support() {
                         <SelectValue placeholder="Select impact" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="single">Only me</SelectItem>
-                        <SelectItem value="unknown">Don't know</SelectItem>
-                        <SelectItem value="multiple">Others</SelectItem>
-                        <SelectItem value="all">Company</SelectItem>
+                        <SelectItem value="3">Only Me</SelectItem>
+                        <SelectItem value="2">Mutliple Users</SelectItem>
+                        <SelectItem value="1">Company Wide</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>

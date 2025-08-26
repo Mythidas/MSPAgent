@@ -6,9 +6,9 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "fs:default",
     "dialog:default",
     "log:default",
+    "fs:default",
     {
       "identifier": "http:default",
       "allow": [

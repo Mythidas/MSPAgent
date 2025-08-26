@@ -3,7 +3,7 @@ use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
     Manager,
-    AppHandle, WebviewUrl, WebviewWindowBuilder
+    AppHandle, WebviewUrl, WebviewWindowBuilder,
 };
 use tauri_plugin_log::{Target, TargetKind, RotationStrategy, TimezoneStrategy};
 
@@ -19,10 +19,7 @@ pub fn run() {
                 .targets([
                     Target::new(TargetKind::Stdout),
                     Target::new(TargetKind::Webview),
-                    Target::new(TargetKind::Folder {
-                        path: std::path::PathBuf::from("logs"),
-                        file_name: None
-                    })
+                    Target::new(TargetKind::LogDir { file_name: Some("logs".to_string()) })
                 ])
                 .max_file_size(50_000)
                 .rotation_strategy(RotationStrategy::KeepAll)
@@ -33,7 +30,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             read_registry_value,
             write_registry_value,
-            get_device_name
+            get_device_name,
+            read_file_text
         ])
         .setup(|app| {
             // Create menu items
@@ -130,4 +128,9 @@ fn get_device_name() -> Result<String, String> {
         Ok(name) => Ok(name.to_string_lossy().into_owned()),
         Err(e) => Err(e.to_string()),
     }
+}
+
+#[tauri::command]
+fn read_file_text(path: String) -> Result<String, String> {
+    std::fs::read_to_string(path).map_err(|e| e.to_string())
 }

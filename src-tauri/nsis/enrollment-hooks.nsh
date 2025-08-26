@@ -51,6 +51,9 @@ Function ProcessEnrollmentSecret
   # Write enrollment configuration to registry
   WriteRegStr SHCTX "SOFTWARE\MSPByte\MSPAgent" "${ENROLLMENT_SECRET_VALUE}" "$EnrollmentSecret"
   WriteRegStr SHCTX "SOFTWARE\MSPByte\MSPAgent" "${API_ENDPOINT_VALUE}" "$ApiEndpoint"
+
+  # Write startup key for exe
+  WriteRegStr SHCTX "SOFTWARE\Microsoft\Windows\CurrentVersion\Run" "MSPAgent" "$INSTDIR\MSPAgent.exe"
   
   # Log success (only visible in detailed installer log)
   DetailPrint "Enrollment configuration saved successfully"
@@ -60,4 +63,5 @@ FunctionEnd
 !macro NSIS_HOOK_PREUNINSTALL
   # Clean up our registry entries
   DeleteRegKey SHCTX "SOFTWARE\MSPByte\MSPAgent"
+  DeleteRegValue SHCTX "SOFTWARE\Microsoft\Windows\CurrentVersion\Run" "MSPAgent"
 !macroend

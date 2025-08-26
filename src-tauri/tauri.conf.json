@@ -54,7 +54,7 @@
       "tsp": false,
       "webviewInstallMode": {
         "silent": true,
-        "type": "offlineInstaller"
+        "type": "embedBootstrapper"
       }
     }
   }
