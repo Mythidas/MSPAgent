@@ -27,7 +27,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { getAPIKey } from "@/lib/helpers/api";
+import { getAPIEndpoint, getAPIKey } from "@/lib/helpers/api";
 import { fetch } from "@tauri-apps/plugin-http";
 
 const formSchema = z.object({
@@ -92,6 +92,10 @@ export default function Support() {
       if (!apiKey) {
         throw "Failed to find API Key";
       }
+      const apiEndpoint = await getAPIEndpoint();
+      if (!apiEndpoint) {
+        throw "Failed to find APIEndpoint";
+      }
 
       const screenshot = data.screenshot
         ? await readFileBinary(data.screenshot)
@@ -112,21 +116,18 @@ export default function Support() {
         data.urgency = "3";
       }
 
-      const res = await fetch(
-        "http://192.168.1.112:3000/api/agent/tickets/create",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            ...data,
-            deviceId: settings.deviceUID,
-            siteId: settings.siteUID,
-            screenshot: imageBase64,
-          }),
-        }
-      );
+      const res = await fetch(`${apiEndpoint}/api/agent/tickets/create`, {
+        method: "POST",
+        headers: {
+          "X-API-Key": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          ...data,
+          deviceId: settings.deviceUID,
+          siteId: settings.siteUID,
+          screenshot: imageBase64,
+        }),
+      });
       if (!res.ok) {
         const errText = await res.text();
         throw `HTTP ${res.status}: ${errText}`;

@@ -12,8 +12,8 @@
     {
       "identifier": "http:default",
       "allow": [
-        { "url": "http://192.168.1.112:3000" },
-        { "url": "https://mspbyte.pro" }
+        { "url": "https://mspbyte.pro" },
+        { "url": "http://192.168.1.112:3000" }
       ]
     }
   ]
